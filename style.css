@@ -1,72 +1,162 @@
-body {
+* {
+    box-sizing: border-box;
+}
+html, body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    height: 100%;
+    background: #fff;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
     overflow: hidden;
 }
 .container {
     display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    position: relative;
-    background-color: white;
-    padding: 20px;
-    max-width: 100%;
-    box-sizing: border-box;
+    gap: 20px;
     height: 100vh;
+    height: 100dvh;
+    padding: 20px;
 }
 .column {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    transition: flex-basis 0.5s ease;
+}
+.track {
     display: flex;
     flex-direction: column;
-    width: calc(50% - 70px);
-    box-sizing: border-box;
-    overflow: hidden;
-    height: calc(100vh - 40px);
-    transition: width 0.5s ease, margin 0.5s ease;
-    margin: 0 20px;
+    gap: 10px;
+    will-change: transform;
 }
-.middle {
-    position: relative;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    cursor: pointer;
-    background-color: white;
-    padding: 20px 10px;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: calc(100vh - 40px);
+.item {
+    display: block;
+    width: 100%;
+    margin: 0;
+    cursor: crosshair;
 }
-.middle:hover {
-    text-decoration: underline;
-}
-.info {
-    display: none;
-    width: 0;
-    background-color: white;
-    padding: 20px;
-    overflow-y: auto;
-    max-height: 100%;
-    box-sizing: border-box;
-    transition: width 0.5s ease, opacity 0.5s ease;
-    opacity: 0;
-}
-img {
+.item img {
+    display: block;
     width: 100%;
     height: auto;
-    object-fit: cover;
-    margin-bottom: 10px;
+    transition: opacity 0.4s ease, filter 0.4s ease;
 }
-.scroll-container {
-    display: flex;
-    flex-direction: column;
-    animation: scrollImages linear infinite;
+.column.hovering .item img {
+    opacity: 0.35;
+    filter: grayscale(1);
 }
-@keyframes scrollImages {
-    0% {
-        transform: translateY(0);
+.column.hovering .item.active img {
+    opacity: 1;
+    filter: none;
+}
+
+/* Name in der Mitte */
+.middle {
+    flex: 0 0 auto;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font: inherit;
+    letter-spacing: 0.1em;
+    background: none;
+    border: 0;
+    padding: 0 6px;
+    color: inherit;
+    cursor: pointer;
+}
+.middle:hover,
+.middle:focus-visible {
+    text-decoration: underline;
+    outline: none;
+}
+
+/* Info-Bereich */
+.info {
+    flex: 0 0 0;
+    width: 0;
+    overflow: hidden auto;
+    opacity: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    transition: flex-basis 0.5s ease, opacity 0.5s ease;
+}
+.info p {
+    margin: 0 0 1em;
+    width: min(460px, 70vw);
+}
+.info a {
+    color: inherit;
+}
+.container.open .info {
+    flex-basis: min(500px, 40vw);
+    opacity: 1;
+}
+
+/* Hover-Beschriftung */
+.caption {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10;
+    max-width: 280px;
+    padding: 10px 12px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    line-height: 1.4;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(-9999px, 0, 0);
+    transition: opacity 0.25s ease;
+}
+.caption.visible {
+    opacity: 1;
+}
+.caption-category {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+    margin-bottom: 4px;
+}
+.caption-title {
+    display: block;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+.caption-text {
+    display: block;
+}
+
+/* Mobil */
+@media (max-width: 700px) {
+    .container {
+        gap: 10px;
+        padding: 10px;
     }
-    100% {
-        transform: translateY(-50%);
+    .middle {
+        padding: 0 2px;
+        font-size: 13px;
+    }
+    .container.open .column {
+        flex-basis: 0;
+        flex-grow: 0;
+    }
+    .container.open .info {
+        flex: 1 1 auto;
+    }
+    .info p {
+        width: auto;
+    }
+    .caption {
+        max-width: calc(100vw - 32px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .column {
+        overflow-y: auto;
     }
 }
