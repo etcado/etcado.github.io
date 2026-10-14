@@ -11,9 +11,11 @@ this is my portfolio
 {
     src: "images/mein-projekt.jpg",
     title: "Mein Projekt",
-    text: "Kurzer Text, der beim längeren Hovern erscheint.",
-    category: "Video" // oder "KI" / "Foto"
+    year: 2025,
+    text: "Kurzer Text, der beim Hovern über dem Titel erscheint",
+    tags: ["Video"] // oder "KI" / "Foto"
 },
 ```
 
-Der Text über dich steht in `index.html` im Bereich `<aside class="info">`.
+Der Text über dich steht in `index.html` im Bereich `<div class="about">`.
+Grösse des Rasters und Stärke der Lupe lassen sich oben in `main.js` einstellen.
