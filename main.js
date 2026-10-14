@@ -1,13 +1,16 @@
 (() => {
     // ---------- Einstellungen ----------
-    const PITCH_X = 9;        // Abstand der Kacheln (CSS-Pixel) ohne Lupe
-    const PITCH_Y = 13;
+    const PITCH_X = 11;       // Abstand der Kacheln (CSS-Pixel) ohne Lupe
+    const PITCH_Y = 16;
     const GAP = 0.3;           // Anteil Lücke zwischen den Kacheln (aussen)
     const GAP_LENS = 0.07;     // Anteil Lücke in der Lupe
-    const MAGNIFY = 24;        // Vergrösserung im Zentrum der Lupe
+    const MAGNIFY = 23;        // Vergrösserung im Zentrum der Lupe
     const LENS_POW = 1.7;      // Form der Lupe (höher = flacher)
     const LENS_SIZES = [0, 0.7, 1, 1.35];
-    const HOVER_DELAY = 450;   // ms, bis Titel und Text erscheinen
+    const HOVER_DELAY = 220;   // ms, bis Titel und Text erscheinen
+    const LENS_FOLLOW = 6;     // wie schnell die Lupe zur nächsten Kachel gleitet (kleiner = weicher)
+    const SPEED_SHRINK = 1800; // ab dieser Geschwindigkeit (px/s) ist die Lupe am kleinsten
+    const LENS_MIN = 0.35;     // kleinste Lupe bei schneller Bewegung
 
     const canvas = document.getElementById('stage');
     const hud = document.getElementById('hud');
@@ -15,6 +18,10 @@
     const hudTitle = document.getElementById('hud-title');
     const hudYear = document.getElementById('hud-year');
     const hudTags = document.getElementById('hud-tags');
+    const detail = document.getElementById('detail');
+    const detailTitle = document.getElementById('detail-title');
+    const detailText = document.getElementById('detail-text');
+    const detailLink = document.getElementById('detail-link');
     const root = document.documentElement;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,7 +44,11 @@
         theme: 'dark',
         hoverCell: null,
         hoverSince: 0,
-        shownCell: null
+        shownCell: null,
+        speed: 0,                        // geglättete Bewegung (px/s)
+        lensScale: 1,                    // 1 = volle Lupe, kleiner bei schneller Bewegung
+        prev: { mx: 0, my: 0, ox: 0, oy: 0 },
+        detailCell: null                 // geöffnetes Projekt (Klick)
     };
 
     try {
@@ -236,7 +247,24 @@
     state.offset.y = Math.random() * 10000;
 
     function sigma() {
-        return Math.min(Math.max(Math.min(state.w, state.h) * 0.42, 180), 420) * LENS_SIZES[state.lensSize];
+        return Math.min(Math.max(Math.min(state.w, state.h) * 0.42, 180), 420) * LENS_SIZES[state.lensSize] * state.lensScale;
+    }
+
+    // effektive Stärke der Lupe (inkl. Geschwindigkeit)
+    function amount() {
+        return state.lensAmt * (0.3 + 0.7 * state.lensScale);
+    }
+
+    // halbe Grösse der vergrösserten Kachel in der Mitte (CSS-Pixel)
+    function centerTileHalf() {
+        const a = amount() * (1 - 1 / MAGNIFY);
+        const mag = 1 / Math.max(1 - a, 1 / MAGNIFY);
+        return [0.45 * PITCH_X * mag * (1 - GAP_LENS), 0.45 * PITCH_Y * mag * (1 - GAP_LENS)];
+    }
+
+    function onCenterTile(x, y) {
+        const [hw, hh] = centerTileHalf();
+        return amount() > 0.5 && Math.abs(x - state.lens.x) < hw && Math.abs(y - state.lens.y) < hh;
     }
 
     // ---------- Projekt-Info ----------
@@ -286,8 +314,57 @@
         hud.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
     }
 
+    function openDetail() {
+        const cell = currentCell();
+        const p = projectAt(cell[0], cell[1]);
+        state.detailCell = cell;
+        if (!state.shownCell) showInfo(cell);
+        detailTitle.textContent = p.title || '';
+        detailText.textContent = p.description || p.text || '';
+        if (p.link) {
+            detailLink.href = p.link;
+            detailLink.hidden = false;
+        } else {
+            detailLink.hidden = true;
+        }
+        detail.hidden = false;
+        placeDetail();
+        requestAnimationFrame(() => detail.classList.add('visible'));
+    }
+
+    function closeDetail() {
+        if (!state.detailCell) return;
+        state.detailCell = null;
+        detail.classList.remove('visible');
+        setTimeout(() => {
+            if (!state.detailCell) detail.hidden = true;
+        }, 250);
+    }
+
+    function placeDetail() {
+        if (!state.detailCell) return;
+        const m = 20;
+        const w = detail.offsetWidth;
+        const h = detail.offsetHeight;
+        let left;
+        let top;
+        if (state.w < 640) {
+            left = (state.w - w) / 2;
+            top = state.h - h - m;
+        } else {
+            const [hw] = centerTileHalf();
+            left = state.lens.x + hw + 36;
+            if (left + w > state.w - m) left = state.lens.x - hw - 36 - w;
+            top = state.lens.y - h / 2;
+        }
+        left = Math.min(Math.max(left, m), state.w - w - m);
+        top = Math.min(Math.max(top, m), state.h - h - m);
+        detail.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
+    }
+
     function updateHover(now) {
-        if (state.lensAmt < 0.6 || state.dragging) {
+        if (state.detailCell) return;
+        if (amount() < 0.6 || state.dragging) {
             state.hoverCell = null;
             if (state.shownCell) hideInfo();
             return;
@@ -308,17 +385,34 @@
     let last = performance.now();
 
     function frame(now) {
-        const dt = Math.min((now - last) / 1000, 0.05);
+        const realDt = Math.max((now - last) / 1000, 1e-3);
+        const dt = Math.min(realDt, 0.1);
         last = now;
-        const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * 14);
+        const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * LENS_FOLLOW);
         const easeAmt = reducedMotion ? 1 : 1 - Math.exp(-dt * 6);
 
-        // Lupe rastet auf die Mitte der Kachel unter dem Mauszeiger ein
-        const tx = (Math.floor((state.mouse.x + state.offset.x) / PITCH_X) + 0.5) * PITCH_X - state.offset.x;
-        const ty = (Math.floor((state.mouse.y + state.offset.y) / PITCH_Y) + 0.5) * PITCH_Y - state.offset.y;
-        state.lens.x += (tx - state.lens.x) * ease;
-        state.lens.y += (ty - state.lens.y) * ease;
-        state.lensAmt += (state.lensOn - state.lensAmt) * easeAmt;
+        // Geschwindigkeit von Maus und Raster messen
+        const pv = state.prev;
+        const moved = Math.hypot(state.mouse.x - pv.mx, state.mouse.y - pv.my) +
+            Math.hypot(state.offset.x - pv.ox, state.offset.y - pv.oy);
+        pv.mx = state.mouse.x; pv.my = state.mouse.y; pv.ox = state.offset.x; pv.oy = state.offset.y;
+        const v = moved / realDt;
+        state.speed += (v - state.speed) * (1 - Math.exp(-dt * (v > state.speed ? 12 : 5)));
+
+        // schnell = kleine Lupe; langsam = Lupe wächst wieder (etwas gemächlicher)
+        const targetScale = state.detailCell ? 1 :
+            Math.max(LENS_MIN, 1 - (1 - LENS_MIN) * Math.min(state.speed / SPEED_SHRINK, 1));
+        const scaleRate = targetScale < state.lensScale ? 10 : 2.5;
+        state.lensScale += (targetScale - state.lensScale) * (reducedMotion ? 1 : 1 - Math.exp(-dt * scaleRate));
+
+        // Lupe gleitet zur Mitte der Kachel unter dem Mauszeiger (steht still, solange ein Projekt offen ist)
+        if (!state.detailCell) {
+            const tx = (Math.floor((state.mouse.x + state.offset.x) / PITCH_X) + 0.5) * PITCH_X - state.offset.x;
+            const ty = (Math.floor((state.mouse.y + state.offset.y) / PITCH_Y) + 0.5) * PITCH_Y - state.offset.y;
+            state.lens.x += (tx - state.lens.x) * ease;
+            state.lens.y += (ty - state.lens.y) * ease;
+        }
+        state.lensAmt += ((state.detailCell ? 1 : state.lensOn) - state.lensAmt) * easeAmt;
 
         if (!state.dragging && (Math.abs(state.velocity.x) > 0.01 || Math.abs(state.velocity.y) > 0.01)) {
             state.offset.x += state.velocity.x * dt;
@@ -331,7 +425,7 @@
         const dpr = state.dpr;
         gl.uniform2f(U.uRes, canvas.width, canvas.height);
         gl.uniform2f(U.uLens, state.lens.x * dpr, state.lens.y * dpr);
-        gl.uniform1f(U.uAmt, state.lensAmt);
+        gl.uniform1f(U.uAmt, amount());
         gl.uniform1f(U.uSigma, sigma() * dpr);
         gl.uniform1f(U.uMag, MAGNIFY);
         gl.uniform2f(U.uPitch, PITCH_X * dpr, PITCH_Y * dpr);
@@ -348,6 +442,7 @@
 
         updateHover(now);
         placeInfo();
+        placeDetail();
         requestAnimationFrame(frame);
     }
 
@@ -360,12 +455,16 @@
         state.dragging = true;
         state.moved = 0;
         state.velocity.x = state.velocity.y = 0;
-        if (e.pointerType !== 'mouse') state.lensOn = 0;
-        document.body.classList.add('dragging');
+        state.downOnTile = onCenterTile(e.clientX, e.clientY);
+        if (e.pointerType !== 'mouse' && !state.downOnTile && !state.detailCell) state.lensOn = 0;
     });
 
     canvas.addEventListener('pointermove', e => {
         if (state.dragging && dragStart) {
+            if (state.moved > 6) {
+                document.body.classList.add('dragging');
+                closeDetail();
+            }
             const dx = e.clientX - dragStart.x;
             const dy = e.clientY - dragStart.y;
             const t = performance.now();
@@ -392,8 +491,20 @@
             state.velocity.x = state.velocity.y = 0;
         }
         dragStart = null;
+        if (state.moved >= 8) return;
+        state.velocity.x = state.velocity.y = 0;
+
+        // Klick auf die Kachel in der Lupe: Projekttext öffnen; daneben: schliessen
+        const onTile = state.downOnTile && onCenterTile(e.clientX, e.clientY);
+        if (state.detailCell) {
+            if (!onTile) closeDetail();
+            if (e.pointerType === 'mouse' || onTile) return;
+        } else if (onTile) {
+            openDetail();
+            return;
+        }
         // Antippen auf Touch: Lupe an dieser Stelle öffnen
-        if (e.pointerType !== 'mouse' && state.moved < 8) {
+        if (e.pointerType !== 'mouse') {
             state.velocity.x = state.velocity.y = 0;
             state.mouse.x = e.clientX;
             state.mouse.y = e.clientY;
@@ -415,18 +526,25 @@
     window.addEventListener('wheel', e => {
         if (!document.getElementById('about').hidden) return;
         e.preventDefault();
+        closeDetail();
         const k = e.deltaMode === 1 ? 16 : 1;
         state.offset.x += (e.shiftKey ? e.deltaY : e.deltaX) * k;
         state.offset.y += (e.shiftKey ? 0 : e.deltaY) * k;
     }, { passive: false });
 
+    document.getElementById('detail-close').addEventListener('click', closeDetail);
+
     window.addEventListener('keydown', e => {
         const step = 60;
+        if (e.key.startsWith('Arrow')) closeDetail();
         if (e.key === 'ArrowLeft') state.offset.x -= step;
         else if (e.key === 'ArrowRight') state.offset.x += step;
         else if (e.key === 'ArrowUp') state.offset.y -= step;
         else if (e.key === 'ArrowDown') state.offset.y += step;
-        else if (e.key === 'Escape') closeAbout();
+        else if (e.key === 'Escape') {
+            closeDetail();
+            closeAbout();
+        }
     });
 
     // ---------- Buttons ----------
