@@ -1,36 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ERDEM TURGUT</title>
+<meta name="description" content="Portfolio von Erdem Turgut – Video, KI und Fotografie.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <div class="column" id="column1">
-        <div class="scroll-container">
-            <img src="image1.jpg" alt="Image 1">
-            <img src="image2.jpg" alt="Image 2">
-            <img src="image3.jpg" alt="Image 3">
-            <img src="image4.jpg" alt="Image 4">
-        </div>
-    </div>
-    <div class="middle" id="middle" onclick="toggleInfo()">ERDEM TURGUT</div>
-    <div class="info" id="info" style="display: none;">
+<div class="container" id="container">
+    <div class="column" data-direction="1"><div class="track"></div></div>
+    <button class="middle" id="middle" type="button" aria-expanded="false" aria-controls="info">ERDEM TURGUT</button>
+    <aside class="info" id="info" aria-hidden="true">
         <p>
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            Erdem Turgut – Video, KI und Fotografie.
         </p>
-    </div>
-    <div class="column" id="column2">
-        <div class="scroll-container">
-            <img src="image1.jpg" alt="Image 1">
-            <img src="image2.jpg" alt="Image 2">
-            <img src="image3.jpg" alt="Image 3">
-            <img src="image4.jpg" alt="Image 4">
-        </div>
-    </div>
+        <p>
+            Hier steht ein kurzer Text über dich und deine Arbeit. Bewege die Maus länger über ein Bild, um mehr über das Projekt zu erfahren.
+        </p>
+        <p>
+            <a href="mailto:hallo@example.com">Kontakt</a>
+        </p>
+    </aside>
+    <div class="column" data-direction="-1"><div class="track"></div></div>
 </div>
+<div class="caption" id="caption" role="tooltip">
+    <span class="caption-category" id="caption-category"></span>
+    <strong class="caption-title" id="caption-title"></strong>
+    <span class="caption-text" id="caption-text"></span>
+</div>
+<script src="projects.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
