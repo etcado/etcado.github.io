@@ -13,7 +13,9 @@ this is my portfolio
     title: "Mein Projekt",
     year: 2025,
     text: "Kurzer Text, der beim Hovern über dem Titel erscheint",
-    tags: ["Video"] // oder "KI" / "Foto"
+    tags: ["Video"], // oder "KI" / "Foto"
+    description: "Längerer Text, der beim Klick auf die Kachel erscheint",
+    link: "https://vimeo.com/..." // optional
 },
 ```
 

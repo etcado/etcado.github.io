@@ -20,6 +20,13 @@
     <ul class="hud-tags" id="hud-tags"></ul>
 </div>
 
+<div class="detail" id="detail" role="dialog" aria-labelledby="detail-title" hidden>
+    <button type="button" class="detail-close" id="detail-close" aria-label="Schliessen">×</button>
+    <h3 class="detail-title" id="detail-title"></h3>
+    <p class="detail-text" id="detail-text"></p>
+    <a class="detail-link" id="detail-link" href="#" target="_blank" rel="noopener" hidden>Projekt ansehen →</a>
+</div>
+
 <nav class="toolbar">
     <button type="button" class="icon" id="btn-info" aria-label="Über mich" title="Über mich">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.6" class="dot"/></svg>
@@ -42,7 +49,7 @@
         <p class="about-sub">Video · KI · Fotografie</p>
         <p>
             Hier steht ein kurzer Text über dich und deine Arbeit. Bewege die Maus über die Bilder –
-            wo du verweilst, erscheinen Titel und Beschreibung des Projekts.
+            wo du verweilst, erscheinen Titel und Tags. Ein Klick auf das Bild öffnet den Text zum Projekt.
         </p>
         <p class="about-hint">Ziehen oder scrollen, um dich durch das Raster zu bewegen.</p>
         <p><a href="mailto:hallo@example.com">hallo@example.com</a></p>
