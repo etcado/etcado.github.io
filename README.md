@@ -24,5 +24,5 @@ Grösse des Rasters und Stärke der Lupe lassen sich oben in `main.js` einstelle
 
 ## Nach einem Update
 
-Wenn du `main.js`, `style.css` oder `projects.js` änderst, erhöhe in `index.html` die Versionsnummer (`?v=4` → `?v=5`).
+Wenn du `main.js`, `style.css` oder `projects.js` änderst, erhöhe in `index.html` die Versionsnummer (`?v=5` → `?v=6`).
 So laden alle Browser sofort die neue Version statt einer alten aus dem Cache.

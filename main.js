@@ -1,7 +1,7 @@
 (() => {
     // ---------- Einstellungen ----------
-    const PITCH_X = 11;       // Abstand der Kacheln (CSS-Pixel) ohne Lupe
-    const PITCH_Y = 16;
+    const PITCH_X = 16;       // Abstand der Kacheln (CSS-Pixel) ohne Lupe – 4:3
+    const PITCH_Y = 12;
     const GAP = 0.3;           // Anteil Lücke zwischen den Kacheln (aussen)
     const GAP_LENS = 0.07;     // Anteil Lücke in der Lupe
     const MAGNIFY = 23;        // Vergrösserung im Zentrum der Lupe
@@ -128,7 +128,7 @@
         vec2 local = (f - 0.5) * uPitch;
         float gap = mix(uGap, uGapLens, uAmt * fall);
         vec2 half_ = 0.5 * uPitch * (1.0 - gap);
-        float radius = min(half_.x, half_.y) * 0.42;
+        float radius = min(half_.x, half_.y) * 0.26;
         float sd = roundBox(local, half_, radius);
         vec2 fw = fwidth(g) * uPitch;
         float aa = max(length(fw) * 0.6, 1e-4);
